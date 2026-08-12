@@ -1,0 +1,719 @@
+/* =========================================
+   TEACHER DASHBOARD
+   Style disamakan dengan Student Dashboard
+========================================= */
+
+.teacher-page {
+  min-height: 100vh;
+  background: #f5f7fb;
+  padding: 32px 20px;
+}
+
+.teacher-container {
+  width: 100%;
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+/* =========================================
+   HEADER
+========================================= */
+
+.teacher-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.teacher-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.teacher-header h1 {
+  margin: 0;
+  font-size: 32px;
+  color: #0f172a;
+}
+
+.teacher-header p:last-child {
+  margin: 6px 0 0;
+  color: #64748b;
+}
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+.teacher-logout {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 18px;
+  background: #0f172a;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.teacher-logout:hover {
+  background: #1e293b;
+}
+
+/* =========================================
+   CARD
+========================================= */
+
+.teacher-card {
+  margin-bottom: 20px;
+  padding: 26px;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  background: white;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+}
+
+/* =========================================
+   SECTION HEADER
+========================================= */
+
+.teacher-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.teacher-section-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 22px;
+}
+
+.teacher-section-header p {
+  margin: 7px 0 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+/* =========================================
+   SELECT
+========================================= */
+
+.teacher-section-header select {
+  min-width: 150px;
+  padding: 11px 13px;
+  border: 1px solid #dbe2ea;
+  border-radius: 11px;
+  background: white;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+
+.teacher-section-header select:focus {
+  border-color: #2563eb;
+}
+
+/* =========================================
+   ERROR
+========================================= */
+
+.teacher-error {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* =========================================
+   QR ABSENSI
+========================================= */
+
+.qr-card {
+  overflow: hidden;
+}
+
+.qr-start-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 10px 5px;
+}
+
+.qr-placeholder {
+  width: 280px;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 2px dashed #dbe2ea;
+  border-radius: 18px;
+
+  background: #f8fafc;
+  color: #94a3b8;
+
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.teacher-primary-button {
+  width: 100%;
+  max-width: 360px;
+
+  border: 0;
+  border-radius: 12px;
+
+  padding: 13px 18px;
+
+  background: #2563eb;
+  color: white;
+
+  font-weight: 800;
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.teacher-primary-button:hover {
+  background: #1d4ed8;
+}
+
+.teacher-primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   QR ACTIVE
+========================================= */
+
+.qr-active-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  padding: 10px 0 0;
+}
+
+.qr-code-box {
+  padding: 18px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+
+  background: white;
+
+  box-shadow: 0 8px 25px rgba(15, 23, 42, 0.08);
+}
+
+.qr-session-info {
+  margin-top: 18px;
+}
+
+.qr-session-info span {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  background: #dcfce7;
+  color: #166534;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.qr-session-info strong {
+  display: block;
+  margin-top: 10px;
+
+  color: #0f172a;
+  font-size: 22px;
+}
+
+.qr-session-info p {
+  margin: 7px 0 18px;
+
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.teacher-stop-button {
+  border: 0;
+  border-radius: 12px;
+
+  padding: 11px 20px;
+
+  background: #fee2e2;
+  color: #b91c1c;
+
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.teacher-stop-button:hover {
+  background: #fecaca;
+}
+
+.teacher-stop-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   ABSENSI SUMMARY
+========================================= */
+
+.attendance-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+
+  margin: 24px 0;
+}
+
+.summary-box {
+  padding: 17px;
+
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.summary-box span {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #64748b;
+  font-size: 13px;
+}
+
+.summary-box strong {
+  color: #0f172a;
+  font-size: 24px;
+}
+
+/* =========================================
+   REFRESH
+========================================= */
+
+.teacher-refresh-button {
+  border: 1px solid #dbe2ea;
+  border-radius: 11px;
+
+  padding: 10px 14px;
+
+  background: white;
+  color: #334155;
+
+  font-weight: 700;
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.teacher-refresh-button:hover {
+  background: #f8fafc;
+}
+
+.teacher-refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   TABLE
+========================================= */
+
+.teacher-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+
+.teacher-table {
+  width: 100%;
+  min-width: 650px;
+
+  border-collapse: collapse;
+}
+
+.teacher-table th {
+  padding: 13px 14px;
+
+  background: #f8fafc;
+
+  color: #64748b;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  text-align: left;
+}
+
+.teacher-table td {
+  padding: 15px 14px;
+
+  border-top: 1px solid #eef2f7;
+
+  color: #475569;
+
+  font-size: 14px;
+}
+
+.teacher-table td strong {
+  color: #0f172a;
+}
+
+.teacher-table tbody tr:hover {
+  background: #fafafa;
+}
+
+/* =========================================
+   STATUS ABSENSI
+========================================= */
+
+.teacher-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 6px 10px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.teacher-status.hadir {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.teacher-status.belum_absen {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* =========================================
+   LOADING / EMPTY
+========================================= */
+
+.teacher-loading,
+.teacher-empty {
+  padding: 25px;
+
+  text-align: center;
+
+  color: #64748b;
+
+  background: #f8fafc;
+  border-radius: 14px;
+}
+
+/* =========================================
+   PENGAJUAN IZIN
+========================================= */
+
+.teacher-permission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.teacher-permission-item {
+  padding: 18px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 15px;
+
+  background: #fafafa;
+}
+
+/* =========================================
+   PERMISSION HEADER
+========================================= */
+
+.permission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  gap: 15px;
+}
+
+.permission-header h3 {
+  margin: 0;
+
+  color: #0f172a;
+  font-size: 17px;
+}
+
+.permission-header p {
+  margin: 5px 0 0;
+
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* =========================================
+   PERMISSION STATUS
+========================================= */
+
+.permission-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  align-self: flex-start;
+
+  padding: 6px 10px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.permission-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.permission-status.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.permission-status.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* =========================================
+   PERMISSION DETAIL
+========================================= */
+
+.permission-detail {
+  margin-top: 15px;
+}
+
+.permission-detail p {
+  margin: 6px 0;
+
+  color: #475569;
+
+  line-height: 1.5;
+}
+
+.permission-detail strong {
+  color: #0f172a;
+}
+
+/* =========================================
+   PERMISSION ACTION
+========================================= */
+
+.permission-action {
+  display: flex;
+  flex-direction: column;
+
+  margin-top: 18px;
+  padding-top: 18px;
+
+  border-top: 1px solid #e5e7eb;
+}
+
+.permission-action label {
+  margin-bottom: 7px;
+
+  color: #334155;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.permission-action textarea {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 12px 13px;
+
+  border: 1px solid #dbe2ea;
+  border-radius: 11px;
+
+  background: white;
+  color: #0f172a;
+
+  font: inherit;
+
+  outline: none;
+  resize: vertical;
+}
+
+.permission-action textarea:focus {
+  border-color: #2563eb;
+}
+
+/* =========================================
+   PERMISSION BUTTONS
+========================================= */
+
+.permission-buttons {
+  display: flex;
+  gap: 10px;
+
+  margin-top: 12px;
+}
+
+.permission-approve-button,
+.permission-reject-button {
+  border: 0;
+  border-radius: 10px;
+
+  padding: 10px 16px;
+
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.permission-approve-button {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.permission-approve-button:hover {
+  background: #bbf7d0;
+}
+
+.permission-reject-button {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.permission-reject-button:hover {
+  background: #fecaca;
+}
+
+.permission-approve-button:disabled,
+.permission-reject-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   BALASAN GURU
+========================================= */
+
+.permission-reply {
+  margin-top: 18px;
+  padding: 13px;
+
+  border-left: 3px solid #2563eb;
+  border-radius: 8px;
+
+  background: #eff6ff;
+}
+
+.permission-reply strong {
+  color: #1d4ed8;
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.permission-reply p {
+  margin: 5px 0 0;
+
+  color: #334155;
+
+  line-height: 1.5;
+}
+
+/* =========================================
+   RESPONSIVE
+========================================= */
+
+@media (max-width: 700px) {
+  .teacher-page {
+    padding: 18px 12px;
+  }
+
+  .teacher-header {
+    align-items: flex-start;
+  }
+
+  .teacher-header h1 {
+    font-size: 25px;
+  }
+
+  .teacher-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+
+  .teacher-section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .teacher-section-header select {
+    width: 100%;
+  }
+
+  .attendance-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-placeholder {
+    width: 240px;
+    height: 240px;
+  }
+
+  .qr-code-box {
+    padding: 14px;
+  }
+
+  .qr-code-box svg {
+    width: 240px;
+    height: 240px;
+  }
+
+  .permission-header {
+    flex-direction: column;
+  }
+
+  .permission-buttons {
+    flex-direction: column;
+  }
+
+  .permission-approve-button,
+  .permission-reject-button {
+    width: 100%;
+  }
+
+  .teacher-table {
+    min-width: 650px;
+  }
+}
