@@ -154,3 +154,278 @@
     width: 100%;
   }
 }
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-sidebar {
+  padding: 14px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.admin-sidebar-title {
+  padding: 10px 12px 15px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.admin-nav-button {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 5px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.admin-nav-button:hover {
+  background: #f1f3f5;
+}
+
+.admin-nav-button.active {
+  background: #222;
+  color: white;
+}
+
+.admin-main {
+  min-width: 0;
+}
+
+.admin-welcome,
+.admin-content-card {
+  padding: 24px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.admin-welcome h2,
+.admin-content-card h2 {
+  margin-top: 0;
+}
+
+.admin-welcome p,
+.admin-content-card p {
+  color: #666;
+}
+
+.admin-submenu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.admin-submenu-grid button {
+  padding: 18px;
+  border: none;
+  border-radius: 10px;
+  background: #f5f7fb;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-submenu-grid button:hover {
+  background: #eef0f4;
+}
+
+.admin-submenu-grid strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.admin-submenu-grid span {
+  color: #666;
+  font-size: 14px;
+}
+
+.admin-back-button {
+  margin-top: 20px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  background: #222;
+  color: white;
+  cursor: pointer;
+}
+
+@media (max-width: 800px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+  }
+
+  .admin-sidebar-title {
+    grid-column: 1 / -1;
+  }
+
+  .admin-nav-button {
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 500px) {
+  .admin-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-submenu-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.admin-content-header h2 {
+  margin-bottom: 5px;
+}
+
+.admin-content-header p {
+  margin: 0;
+}
+
+.admin-primary-button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #222;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-primary-button:hover {
+  opacity: 0.85;
+}
+
+.admin-filter-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.admin-filter-buttons button {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #f0f1f3;
+  cursor: pointer;
+}
+
+.admin-filter-buttons button.active {
+  background: #222;
+  color: white;
+}
+
+.admin-user-form {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 25px;
+  padding: 20px;
+  border-radius: 10px;
+  background: #f7f8fa;
+}
+
+.admin-user-form h3 {
+  margin: 0 0 10px;
+}
+
+.admin-user-form label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-user-form input,
+.admin-user-form select {
+  width: 100%;
+  padding: 11px;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  background: white;
+}
+
+.admin-user-form .admin-primary-button {
+  margin-top: 10px;
+}
+
+.admin-user-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-user-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+}
+
+.admin-user-table th,
+.admin-user-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+.admin-user-table th {
+  font-size: 14px;
+  background: #f7f8fa;
+}
+
+.admin-delete-button {
+  padding: 7px 12px;
+  border: none;
+  border-radius: 7px;
+  background: #d93025;
+  color: white;
+  cursor: pointer;
+}
+
+.admin-delete-button:hover {
+  opacity: 0.85;
+}
+
+.admin-loading-small {
+  padding: 30px 0;
+  text-align: center;
+  color: #666;
+}
+
+.admin-success {
+  margin-bottom: 20px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #e6f4ea;
+  color: #137333;
+}
+
+@media (max-width: 600px) {
+  .admin-content-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-content-header .admin-primary-button {
+    width: 100%;
+  }
+}

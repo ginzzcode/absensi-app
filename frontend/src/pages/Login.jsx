@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Login.css";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://127.0.0.1:8000";
 
 function Login() {
   const [role, setRole] = useState("student");
@@ -19,6 +21,7 @@ function Login() {
 
     setError("");
     setLoading(true);
+
     console.log("API_URL:", API_URL);
 
     try {
@@ -42,7 +45,9 @@ function Login() {
       try {
         data = await response.json();
       } catch {
-        throw new Error("Server mengirim response yang tidak valid");
+        throw new Error(
+          "Server mengirim response yang tidak valid"
+        );
       }
 
       if (!response.ok) {
@@ -71,8 +76,12 @@ function Login() {
         navigate("/student/dashboard");
       } else if (data.user.role === "teacher") {
         navigate("/teacher/dashboard");
+      } else if (data.user.role === "admin") {
+        navigate("/admin/dashboard");
       } else {
-        throw new Error("Role pengguna tidak dikenali");
+        throw new Error(
+          "Role pengguna tidak dikenali"
+        );
       }
 
     } catch (error) {
@@ -123,7 +132,6 @@ function Login() {
 
         </div>
 
-
         <div className="role-switcher">
 
           <button
@@ -133,7 +141,9 @@ function Login() {
                 ? "active"
                 : ""
             }
-            onClick={() => changeRole("student")}
+            onClick={() =>
+              changeRole("student")
+            }
           >
             Siswa
           </button>
@@ -145,13 +155,14 @@ function Login() {
                 ? "active"
                 : ""
             }
-            onClick={() => changeRole("teacher")}
+            onClick={() =>
+              changeRole("teacher")
+            }
           >
             Guru
           </button>
 
         </div>
-
 
         <form
           className="login-form"
@@ -188,7 +199,6 @@ function Login() {
             required
           />
 
-
           <label>
             Password
           </label>
@@ -205,13 +215,11 @@ function Login() {
             required
           />
 
-
           {error && (
             <div className="login-error">
               {error}
             </div>
           )}
-
 
           <button
             className="login-button"
@@ -228,7 +236,6 @@ function Login() {
           </button>
 
         </form>
-
 
         <p className="login-footer">
           Sistem Absensi Sekolah
