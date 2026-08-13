@@ -109,7 +109,9 @@ function StudentDashboard() {
         );
       }
 
-      setAttendanceHistory(data.history || []);
+      setAttendanceHistory(
+        data.history || []
+      );
     } catch (err) {
       console.error(err);
 
@@ -178,7 +180,8 @@ function StudentDashboard() {
   const submitPermission = async (event) => {
     event.preventDefault();
 
-    const token = localStorage.getItem("token");
+    const token =
+      localStorage.getItem("token");
 
     if (!token) {
       navigate("/");
@@ -206,8 +209,10 @@ function StudentDashboard() {
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            "Content-Type":
+              "application/json",
+            Authorization:
+              `Bearer ${token}`,
           },
           body: JSON.stringify(
             permissionForm
@@ -215,7 +220,8 @@ function StudentDashboard() {
         }
       );
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       if (!response.ok) {
         throw new Error(
@@ -260,14 +266,20 @@ function StudentDashboard() {
     }
 
     try {
-      // Kamera pada browser HP membutuhkan HTTPS.
+      // =========================
+      // CEK HTTPS
+      // =========================
+
       if (!window.isSecureContext) {
         throw new Error(
-          "Kamera membutuhkan HTTPS. Pastikan membuka website dari alamat HTTPS."
+          "Kamera membutuhkan HTTPS. Pastikan website dibuka melalui HTTPS."
         );
       }
 
-      // Pastikan API kamera tersedia.
+      // =========================
+      // CEK SUPPORT KAMERA
+      // =========================
+
       if (
         !navigator.mediaDevices ||
         !navigator.mediaDevices.getUserMedia
@@ -277,50 +289,124 @@ function StudentDashboard() {
         );
       }
 
-      // Bersihkan scanner sebelumnya jika ada.
+      // =========================
+      // BERSIHKAN SCANNER LAMA
+      // =========================
+
       if (scannerRef.current) {
         await stopScanner();
       }
 
       processingQrRef.current = false;
 
-      const scanner = new Html5Qrcode(
-        "student-qr-reader"
-      );
+      // =========================
+      // BUAT SCANNER
+      // =========================
+
+      const scanner =
+        new Html5Qrcode(
+          "student-qr-reader"
+        );
 
       scannerRef.current = scanner;
 
-      // Tampilkan area scanner sebelum meminta kamera.
       setScanning(true);
 
-      // Html5Qrcode sekarang menjadi satu-satunya
-      // yang meminta dan mengelola kamera.
+      // =========================
+      // AMBIL DAFTAR KAMERA
+      // =========================
+
+      const cameras =
+        await Html5Qrcode.getCameras();
+
+      console.log(
+        "Kamera tersedia:",
+        cameras
+      );
+
+      if (
+        !cameras ||
+        cameras.length === 0
+      ) {
+        throw new Error(
+          "Kamera tidak ditemukan di perangkat."
+        );
+      }
+
+      // =========================
+      // CARI KAMERA BELAKANG
+      // =========================
+
+      const backCamera =
+        cameras.find((camera) => {
+          const label =
+            String(
+              camera.label || ""
+            ).toLowerCase();
+
+          return (
+            label.includes("back") ||
+            label.includes("rear") ||
+            label.includes("environment") ||
+            label.includes("belakang") ||
+            label.includes("facing back")
+          );
+        });
+
+      // Kalau kamera belakang
+      // tidak ditemukan berdasarkan
+      // nama, gunakan kamera terakhir.
+      const selectedCamera =
+        backCamera ||
+        cameras[cameras.length - 1];
+
+      console.log(
+        "Kamera yang digunakan:",
+        selectedCamera
+      );
+
+      if (!selectedCamera?.id) {
+        throw new Error(
+          "ID kamera tidak tersedia."
+        );
+      }
+
+      // =========================
+      // MULAI SCANNER
+      // =========================
+
       await scanner.start(
-        {
-          facingMode: {
-            ideal: "environment",
-          },
-        },
+        selectedCamera.id,
         {
           fps: 10,
+
           qrbox: {
             width: 240,
             height: 240,
           },
+
           aspectRatio: 1,
         },
+
         async (decodedText) => {
-          if (processingQrRef.current) {
+          if (
+            processingQrRef.current
+          ) {
             return;
           }
 
-          processingQrRef.current = true;
+          processingQrRef.current =
+            true;
 
-          await handleQrResult(decodedText);
+          await handleQrResult(
+            decodedText
+          );
         },
+
         () => {
+          // Tidak perlu menampilkan
+          // error setiap frame ketika
           // QR belum ditemukan.
-          // Tidak perlu menampilkan error setiap frame.
         }
       );
     } catch (err) {
@@ -338,37 +424,40 @@ function StudentDashboard() {
         "Tidak dapat membuka kamera.";
 
       if (
-        err.name === "NotAllowedError"
+        err.name ===
+          "NotAllowedError" ||
+        err.name ===
+          "PermissionDeniedError"
       ) {
         errorMessage =
-          "Izin kamera ditolak. Izinkan kamera untuk situs ini melalui pengaturan izin kamera browser.";
+          "Izin kamera ditolak. Periksa izin kamera untuk situs ini.";
       } else if (
-        err.name === "PermissionDeniedError"
-      ) {
-        errorMessage =
-          "Izin kamera ditolak. Izinkan kamera untuk situs ini melalui pengaturan browser.";
-      } else if (
-        err.name === "NotFoundError"
+        err.name ===
+        "NotFoundError"
       ) {
         errorMessage =
           "Kamera tidak ditemukan di perangkat.";
       } else if (
-        err.name === "NotReadableError"
+        err.name ===
+        "NotReadableError"
       ) {
         errorMessage =
-          "Kamera sedang digunakan oleh aplikasi lain.";
+          "Kamera tidak dapat digunakan. Pastikan kamera tidak sedang digunakan aplikasi lain.";
       } else if (
-        err.name === "SecurityError"
+        err.name ===
+        "OverconstrainedError"
+      ) {
+        errorMessage =
+          "Kamera yang dipilih tidak dapat digunakan.";
+      } else if (
+        err.name ===
+        "SecurityError"
       ) {
         errorMessage =
           "Browser memblokir akses kamera.";
-      } else if (
-        err.name === "OverconstrainedError"
-      ) {
-        errorMessage =
-          "Kamera belakang tidak dapat digunakan. Coba gunakan kamera lain.";
       } else if (err.message) {
-        errorMessage = err.message;
+        errorMessage =
+          err.message;
       }
 
       setError(errorMessage);
@@ -380,7 +469,8 @@ function StudentDashboard() {
   // =========================
 
   const stopScanner = async () => {
-    const scanner = scannerRef.current;
+    const scanner =
+      scannerRef.current;
 
     processingQrRef.current = false;
 
@@ -410,6 +500,7 @@ function StudentDashboard() {
     }
 
     scannerRef.current = null;
+
     setScanning(false);
   };
 
@@ -417,26 +508,41 @@ function StudentDashboard() {
   // HANDLE QR
   // =========================
 
-  const handleQrResult = async (decodedText) => {
+  const handleQrResult = async (
+    decodedText
+  ) => {
     try {
       setError("");
       setMessage("");
 
+      // =========================
+      // PARSE QR
+      // =========================
+
       let qrData;
 
       try {
-        qrData = JSON.parse(decodedText);
+        qrData =
+          JSON.parse(decodedText);
       } catch {
-        processingQrRef.current = false;
+        processingQrRef.current =
+          false;
+
         return;
       }
 
+      // =========================
+      // VALIDASI QR
+      // =========================
+
       if (
         !qrData ||
-        qrData.type !== "attendance" ||
+        qrData.type !==
+          "attendance" ||
         !qrData.session_code
       ) {
-        processingQrRef.current = false;
+        processingQrRef.current =
+          false;
 
         setError(
           "QR tersebut bukan QR absensi sekolah."
@@ -445,29 +551,44 @@ function StudentDashboard() {
         return;
       }
 
+      // =========================
+      // TOKEN
+      // =========================
+
       const token =
-        localStorage.getItem("token");
+        localStorage.getItem(
+          "token"
+        );
 
       if (!token) {
         await stopScanner();
+
         navigate("/");
+
         return;
       }
 
-      const response = await fetch(
-        `${API_URL}/api/student/attendance/scan`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            session_code:
-              qrData.session_code,
-          }),
-        }
-      );
+      // =========================
+      // KIRIM ABSENSI
+      // =========================
+
+      const response =
+        await fetch(
+          `${API_URL}/api/student/attendance/scan`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "application/json",
+              Authorization:
+                `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              session_code:
+                qrData.session_code,
+            }),
+          }
+        );
 
       const data =
         await response.json();
@@ -478,6 +599,10 @@ function StudentDashboard() {
             "Absensi gagal."
         );
       }
+
+      // =========================
+      // BERHASIL
+      // =========================
 
       await stopScanner();
 
@@ -497,7 +622,8 @@ function StudentDashboard() {
           "Absensi gagal."
       );
 
-      processingQrRef.current = false;
+      processingQrRef.current =
+        false;
     }
   };
 
@@ -508,8 +634,13 @@ function StudentDashboard() {
   const handleLogout = async () => {
     await stopScanner();
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.removeItem(
+      "token"
+    );
+
+    localStorage.removeItem(
+      "user"
+    );
 
     navigate("/");
   };
@@ -518,13 +649,19 @@ function StudentDashboard() {
   // STATUS IZIN
   // =========================
 
-  const getPermissionStatus = (status) => {
+  const getPermissionStatus = (
+    status
+  ) => {
     const normalized =
-      String(status || "").toLowerCase();
+      String(
+        status || ""
+      ).toLowerCase();
 
     if (
-      normalized === "approved" ||
-      normalized === "disetujui"
+      normalized ===
+        "approved" ||
+      normalized ===
+        "disetujui"
     ) {
       return {
         label: "Disetujui",
@@ -533,8 +670,10 @@ function StudentDashboard() {
     }
 
     if (
-      normalized === "rejected" ||
-      normalized === "ditolak"
+      normalized ===
+        "rejected" ||
+      normalized ===
+        "ditolak"
     ) {
       return {
         label: "Ditolak",
@@ -604,6 +743,7 @@ function StudentDashboard() {
         {/* SCANNER */}
 
         <section className="student-card scanner-card">
+
           <div className="card-heading">
             <div>
               <span className="card-eyebrow">
@@ -646,11 +786,13 @@ function StudentDashboard() {
               Tutup Kamera
             </button>
           )}
+
         </section>
 
         {/* INFORMASI AKUN */}
 
         <section className="student-card">
+
           <div className="card-heading">
             <div>
               <span className="card-eyebrow">
@@ -664,8 +806,11 @@ function StudentDashboard() {
           </div>
 
           <div className="student-info-grid">
+
             <div className="info-item">
-              <span>Nama</span>
+              <span>
+                Nama
+              </span>
 
               <strong>
                 {user.name}
@@ -673,7 +818,9 @@ function StudentDashboard() {
             </div>
 
             <div className="info-item">
-              <span>NIS</span>
+              <span>
+                NIS
+              </span>
 
               <strong>
                 {user.nis || "-"}
@@ -681,7 +828,9 @@ function StudentDashboard() {
             </div>
 
             <div className="info-item">
-              <span>Kelas</span>
+              <span>
+                Kelas
+              </span>
 
               <strong>
                 {user.class_name || "-"}
@@ -689,7 +838,9 @@ function StudentDashboard() {
             </div>
 
             <div className="info-item">
-              <span>Status</span>
+              <span>
+                Status
+              </span>
 
               <strong>
                 {attendanceHistory.some(
@@ -698,20 +849,25 @@ function StudentDashboard() {
                       new Date()
                         .toISOString()
                         .split("T")[0] &&
-                    item.status === "hadir"
+                    item.status ===
+                      "hadir"
                 )
                   ? "Hadir"
                   : "Belum Absen"}
               </strong>
             </div>
+
           </div>
+
         </section>
 
         {/* AJUKAN IZIN */}
 
         <section className="student-card permission-card">
+
           <div className="card-heading">
             <div>
+
               <span className="card-eyebrow">
                 IZIN
               </span>
@@ -725,14 +881,19 @@ function StudentDashboard() {
                 Kirim pengajuan izin kepada
                 guru.
               </p>
+
             </div>
           </div>
 
           <form
             className="permission-form"
-            onSubmit={submitPermission}
+            onSubmit={
+              submitPermission
+            }
           >
+
             <div className="form-row">
+
               <label>
                 Tanggal
 
@@ -741,12 +902,17 @@ function StudentDashboard() {
                   value={
                     permissionForm.date
                   }
-                  onChange={(event) =>
-                    setPermissionForm({
-                      ...permissionForm,
-                      date:
-                        event.target.value,
-                    })
+                  onChange={(
+                    event
+                  ) =>
+                    setPermissionForm(
+                      {
+                        ...permissionForm,
+                        date:
+                          event.target
+                            .value,
+                      }
+                    )
                   }
                 />
               </label>
@@ -758,14 +924,20 @@ function StudentDashboard() {
                   value={
                     permissionForm.reason
                   }
-                  onChange={(event) =>
-                    setPermissionForm({
-                      ...permissionForm,
-                      reason:
-                        event.target.value,
-                    })
+                  onChange={(
+                    event
+                  ) =>
+                    setPermissionForm(
+                      {
+                        ...permissionForm,
+                        reason:
+                          event.target
+                            .value,
+                      }
+                    )
                   }
                 >
+
                   <option value="">
                     Pilih alasan
                   </option>
@@ -785,8 +957,10 @@ function StudentDashboard() {
                   <option value="Lainnya">
                     Lainnya
                   </option>
+
                 </select>
               </label>
+
             </div>
 
             <label>
@@ -798,12 +972,17 @@ function StudentDashboard() {
                 value={
                   permissionForm.description
                 }
-                onChange={(event) =>
-                  setPermissionForm({
-                    ...permissionForm,
-                    description:
-                      event.target.value,
-                  })
+                onChange={(
+                  event
+                ) =>
+                  setPermissionForm(
+                    {
+                      ...permissionForm,
+                      description:
+                        event.target
+                          .value,
+                    }
+                  )
                 }
               />
             </label>
@@ -819,14 +998,18 @@ function StudentDashboard() {
                 ? "Mengirim..."
                 : "Kirim Pengajuan Izin"}
             </button>
+
           </form>
+
         </section>
 
         {/* RIWAYAT IZIN */}
 
         <section className="student-card">
+
           <div className="card-heading">
             <div>
+
               <span className="card-eyebrow">
                 RIWAYAT
               </span>
@@ -839,6 +1022,7 @@ function StudentDashboard() {
                 Pantau status pengajuan
                 izin kamu.
               </p>
+
             </div>
           </div>
 
@@ -846,14 +1030,17 @@ function StudentDashboard() {
             <div className="history-loading">
               Memuat pengajuan izin...
             </div>
-          ) : permissions.length === 0 ? (
+          ) : permissions.length ===
+            0 ? (
             <div className="history-empty">
               Belum ada pengajuan izin.
             </div>
           ) : (
             <div className="permission-list">
+
               {permissions.map(
                 (permission) => {
+
                   const status =
                     getPermissionStatus(
                       permission.status
@@ -867,14 +1054,18 @@ function StudentDashboard() {
                         permission._id
                       }
                     >
+
                       <div className="permission-top">
+
                         <div>
                           <strong>
                             {permission.date}
                           </strong>
 
                           <span>
-                            {permission.reason}
+                            {
+                              permission.reason
+                            }
                           </span>
                         </div>
 
@@ -883,14 +1074,18 @@ function StudentDashboard() {
                         >
                           {status.label}
                         </span>
+
                       </div>
 
                       <p>
-                        {permission.description}
+                        {
+                          permission.description
+                        }
                       </p>
 
                       {permission.teacher_reply && (
                         <div className="teacher-reply">
+
                           <span>
                             Balasan Guru
                           </span>
@@ -900,21 +1095,27 @@ function StudentDashboard() {
                               permission.teacher_reply
                             }
                           </p>
+
                         </div>
                       )}
+
                     </div>
                   );
                 }
               )}
+
             </div>
           )}
+
         </section>
 
         {/* RIWAYAT ABSENSI */}
 
         <section className="student-card">
+
           <div className="card-heading">
             <div>
+
               <span className="card-eyebrow">
                 RIWAYAT
               </span>
@@ -926,6 +1127,7 @@ function StudentDashboard() {
               <p>
                 Daftar kehadiran kamu.
               </p>
+
             </div>
           </div>
 
@@ -940,13 +1142,16 @@ function StudentDashboard() {
             </div>
           ) : (
             <div className="attendance-history">
+
               {attendanceHistory.map(
                 (item) => (
                   <div
                     className="attendance-item"
                     key={item.id}
                   >
+
                     <div className="attendance-date">
+
                       <strong>
                         {item.date}
                       </strong>
@@ -954,9 +1159,11 @@ function StudentDashboard() {
                       <span>
                         {item.time}
                       </span>
+
                     </div>
 
                     <div className="attendance-detail">
+
                       <strong>
                         Kelas{" "}
                         {item.class_name}
@@ -966,6 +1173,7 @@ function StudentDashboard() {
                         {item.teacher_name ||
                           "Guru"}
                       </span>
+
                     </div>
 
                     <span
@@ -976,11 +1184,14 @@ function StudentDashboard() {
                         ? "Hadir"
                         : item.status}
                     </span>
+
                   </div>
                 )
               )}
+
             </div>
           )}
+
         </section>
 
       </div>
