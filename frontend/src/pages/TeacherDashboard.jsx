@@ -7,7 +7,11 @@ const API_URL =
   import.meta.env.VITE_API_URL ||
   "http://127.0.0.1:8000";
 
-const classes = "ABCDEFGHIJK".split("");
+const classes = [
+  "7A", "7B", "7C", "7D", "7E", "7F", "7G", "7H", "7I", "7J", "7K",
+  "8A", "8B", "8C", "8D", "8E", "8F", "8G", "8H", "8I", "8J", "8K",
+  "9A", "9B", "9C", "9D", "9E", "9F", "9G", "9H", "9I", "9J", "9K",
+];
 
 function TeacherDashboard() {
   const navigate = useNavigate();
@@ -19,7 +23,7 @@ function TeacherDashboard() {
   // =========================
 
   const [selectedClass, setSelectedClass] =
-    useState("A");
+  useState("7A");
 
   const [students, setStudents] =
     useState([]);

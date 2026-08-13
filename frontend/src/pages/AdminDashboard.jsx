@@ -4,6 +4,12 @@ import "../styles/AdminDashboard.css";
 const API_URL =
   import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
+const CLASSES = [
+  "7A", "7B", "7C", "7D", "7E", "7F", "7G", "7H", "7I", "7J", "7K",
+  "8A", "8B", "8C", "8D", "8E", "8F", "8G", "8H", "8I", "8J", "8K",
+  "9A", "9B", "9C", "9D", "9E", "9F", "9G", "9H", "9I", "9J", "9K",
+];
+
 function AdminDashboard() {
   const [statistics, setStatistics] = useState(null);
   const [users, setUsers] = useState([]);
@@ -41,22 +47,19 @@ function AdminDashboard() {
       setLoading(true);
       setError("");
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
 
       if (!token) {
-        setError(
-          "Token login tidak ditemukan."
-        );
+        setError("Token login tidak ditemukan.");
         return;
       }
 
       const response = await fetch(
         `${API_URL}/api/admin/dashboard`,
         {
+          method: "GET",
           headers: {
-            Authorization:
-              `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -71,7 +74,6 @@ function AdminDashboard() {
       }
 
       setStatistics(data.statistics);
-
     } catch (err) {
       console.error(err);
 
@@ -79,7 +81,6 @@ function AdminDashboard() {
         err.message ||
           "Gagal mengambil data dashboard."
       );
-
     } finally {
       setLoading(false);
     }
@@ -90,15 +91,19 @@ function AdminDashboard() {
       setUsersLoading(true);
       setError("");
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setError("Token login tidak ditemukan.");
+        return;
+      }
 
       const response = await fetch(
         `${API_URL}/api/admin/users?role=${role}`,
         {
+          method: "GET",
           headers: {
-            Authorization:
-              `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -113,7 +118,6 @@ function AdminDashboard() {
       }
 
       setUsers(data.users || []);
-
     } catch (err) {
       console.error(err);
 
@@ -121,7 +125,6 @@ function AdminDashboard() {
         err.message ||
           "Gagal mengambil data akun."
       );
-
     } finally {
       setUsersLoading(false);
     }
@@ -132,12 +135,13 @@ function AdminDashboard() {
     setActiveMenu("users");
     setShowAddForm(false);
     setMessage("");
+    setError("");
+
     loadUsers(role);
   }
 
   function handleFormChange(event) {
-    const { name, value } =
-      event.target;
+    const { name, value } = event.target;
 
     setForm((previous) => ({
       ...previous,
@@ -163,23 +167,27 @@ function AdminDashboard() {
       setError("");
       setMessage("");
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error(
+          "Token login tidak ditemukan."
+        );
+      }
 
       const payload = {
-        name: form.name,
+        name: form.name.trim(),
         role: form.role,
         password: form.password,
       };
 
       if (form.role === "student") {
-        payload.nis = form.nis;
-        payload.class_name =
-          form.class_name;
+        payload.nis = form.nis.trim();
+        payload.class_name = form.class_name;
       }
 
       if (form.role === "teacher") {
-        payload.email = form.email;
+        payload.email = form.email.trim();
       }
 
       const response = await fetch(
@@ -187,19 +195,14 @@ function AdminDashboard() {
         {
           method: "POST",
           headers: {
-            "Content-Type":
-              "application/json",
-            Authorization:
-              `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(
-            payload
-          ),
+          body: JSON.stringify(payload),
         }
       );
 
-      const data =
-        await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
@@ -208,19 +211,14 @@ function AdminDashboard() {
         );
       }
 
-      setMessage(
-        "Akun berhasil dibuat."
-      );
+      setMessage("Akun berhasil dibuat.");
 
       setShowAddForm(false);
+
       resetForm();
 
-      await loadUsers(
-        userFilter
-      );
-
+      await loadUsers(userFilter);
       await loadDashboard();
-
     } catch (err) {
       console.error(err);
 
@@ -232,10 +230,9 @@ function AdminDashboard() {
   }
 
   async function deleteUser(user) {
-    const confirmed =
-      window.confirm(
-        `Hapus akun ${user.name}?`
-      );
+    const confirmed = window.confirm(
+      `Hapus akun ${user.name}?`
+    );
 
     if (!confirmed) {
       return;
@@ -245,22 +242,25 @@ function AdminDashboard() {
       setError("");
       setMessage("");
 
-      const token =
-        localStorage.getItem("token");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error(
+          "Token login tidak ditemukan."
+        );
+      }
 
       const response = await fetch(
         `${API_URL}/api/admin/users/${user.id}`,
         {
           method: "DELETE",
           headers: {
-            Authorization:
-              `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
-      const data =
-        await response.json();
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
@@ -269,16 +269,10 @@ function AdminDashboard() {
         );
       }
 
-      setMessage(
-        "Akun berhasil dihapus."
-      );
+      setMessage("Akun berhasil dihapus.");
 
-      await loadUsers(
-        userFilter
-      );
-
+      await loadUsers(userFilter);
       await loadDashboard();
-
     } catch (err) {
       console.error(err);
 
@@ -290,13 +284,8 @@ function AdminDashboard() {
   }
 
   function logout() {
-    localStorage.removeItem(
-      "token"
-    );
-
-    localStorage.removeItem(
-      "user"
-    );
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
 
     window.location.href = "/";
   }
@@ -305,61 +294,53 @@ function AdminDashboard() {
     return (
       <>
         <section className="admin-stat-grid">
-
           <div className="admin-stat-card">
-            <span>
-              Jumlah Siswa
-            </span>
+            <span>Jumlah Siswa</span>
+
             <strong>
               {statistics?.total_students ?? 0}
             </strong>
           </div>
 
           <div className="admin-stat-card">
-            <span>
-              Jumlah Guru
-            </span>
+            <span>Jumlah Guru</span>
+
             <strong>
               {statistics?.total_teachers ?? 0}
             </strong>
           </div>
 
           <div className="admin-stat-card">
-            <span>
-              Jumlah Kelas
-            </span>
+            <span>Jumlah Kelas</span>
+
             <strong>
               {statistics?.total_classes ?? 0}
             </strong>
           </div>
 
           <div className="admin-stat-card">
-            <span>
-              Admin
-            </span>
+            <span>Admin</span>
+
             <strong>
               {statistics?.total_admins ?? 0}
             </strong>
           </div>
 
           <div className="admin-stat-card">
-            <span>
-              Absensi Hari Ini
-            </span>
+            <span>Absensi Hari Ini</span>
+
             <strong>
               {statistics?.attendance_today ?? 0}
             </strong>
           </div>
 
           <div className="admin-stat-card">
-            <span>
-              Izin Pending
-            </span>
+            <span>Izin Pending</span>
+
             <strong>
               {statistics?.permissions_pending ?? 0}
             </strong>
           </div>
-
         </section>
 
         <section className="admin-welcome">
@@ -380,13 +361,9 @@ function AdminDashboard() {
   function renderUsers() {
     return (
       <section className="admin-content-card">
-
         <div className="admin-content-header">
-
           <div>
-            <h2>
-              Kelola Akun
-            </h2>
+            <h2>Kelola Akun</h2>
 
             <p>
               Kelola akun siswa dan guru.
@@ -394,6 +371,7 @@ function AdminDashboard() {
           </div>
 
           <button
+            type="button"
             className="admin-primary-button"
             onClick={() => {
               setForm({
@@ -417,12 +395,11 @@ function AdminDashboard() {
               ? "Batal"
               : "Tambah Akun"}
           </button>
-
         </div>
 
         <div className="admin-filter-buttons">
-
           <button
+            type="button"
             className={
               userFilter === "student"
                 ? "active"
@@ -436,6 +413,7 @@ function AdminDashboard() {
           </button>
 
           <button
+            type="button"
             className={
               userFilter === "teacher"
                 ? "active"
@@ -447,7 +425,6 @@ function AdminDashboard() {
           >
             Guru
           </button>
-
         </div>
 
         {showAddForm && (
@@ -455,7 +432,6 @@ function AdminDashboard() {
             className="admin-user-form"
             onSubmit={createUser}
           >
-
             <h3>
               Tambah Akun{" "}
               {form.role === "student"
@@ -468,6 +444,7 @@ function AdminDashboard() {
             </label>
 
             <input
+              type="text"
               name="name"
               value={form.name}
               onChange={handleFormChange}
@@ -500,6 +477,7 @@ function AdminDashboard() {
                 </label>
 
                 <input
+                  type="text"
                   name="nis"
                   value={form.nis}
                   onChange={handleFormChange}
@@ -514,36 +492,20 @@ function AdminDashboard() {
                 <select
                   name="class_name"
                   value={form.class_name}
-                  onChange={
-                    handleFormChange
-                  }
+                  onChange={handleFormChange}
                   required
                 >
                   <option value="">
                     Pilih kelas
                   </option>
 
-                  {[
-                    "A",
-                    "B",
-                    "C",
-                    "D",
-                    "E",
-                    "F",
-                    "G",
-                    "H",
-                    "I",
-                    "J",
-                    "K",
-                  ].map(
+                  {CLASSES.map(
                     (className) => (
                       <option
                         key={className}
-                        value={
-                          className
-                        }
+                        value={className}
                       >
-                        {className}
+                        Kelas {className}
                       </option>
                     )
                   )}
@@ -561,9 +523,7 @@ function AdminDashboard() {
                   type="email"
                   name="email"
                   value={form.email}
-                  onChange={
-                    handleFormChange
-                  }
+                  onChange={handleFormChange}
                   placeholder="Email guru"
                   required
                 />
@@ -578,21 +538,18 @@ function AdminDashboard() {
               type="password"
               name="password"
               value={form.password}
-              onChange={
-                handleFormChange
-              }
+              onChange={handleFormChange}
               placeholder="Minimal 6 karakter"
               minLength={6}
               required
             />
 
             <button
-              className="admin-primary-button"
               type="submit"
+              className="admin-primary-button"
             >
               Buat Akun
             </button>
-
           </form>
         )}
 
@@ -602,9 +559,7 @@ function AdminDashboard() {
           </div>
         ) : (
           <div className="admin-user-table-wrapper">
-
             <table className="admin-user-table">
-
               <thead>
                 <tr>
                   <th>
@@ -638,7 +593,6 @@ function AdminDashboard() {
               </thead>
 
               <tbody>
-
                 {users.length === 0 ? (
                   <tr>
                     <td
@@ -653,71 +607,63 @@ function AdminDashboard() {
                     </td>
                   </tr>
                 ) : (
-                  users.map(
-                    (user) => (
-                      <tr
-                        key={user.id}
-                      >
+                  users.map((user) => (
+                    <tr
+                      key={user.id}
+                    >
+                      <td>
+                        {user.name}
+                      </td>
 
-                        <td>
-                          {user.name}
-                        </td>
-
-                        {userFilter ===
-                          "student" && (
-                          <>
-                            <td>
-                              {user.nis ||
-                                "-"}
-                            </td>
-
-                            <td>
-                              {user.class_name ||
-                                "-"}
-                            </td>
-                          </>
-                        )}
-
-                        {userFilter ===
-                          "teacher" && (
+                      {userFilter ===
+                        "student" && (
+                        <>
                           <td>
-                            {user.email ||
+                            {user.nis ||
                               "-"}
                           </td>
-                        )}
 
+                          <td>
+                            {user.class_name ||
+                              "-"}
+                          </td>
+                        </>
+                      )}
+
+                      {userFilter ===
+                        "teacher" && (
                         <td>
-                          <button
-                            className="admin-delete-button"
-                            onClick={() =>
-                              deleteUser(
-                                user
-                              )
-                            }
-                          >
-                            Hapus
-                          </button>
+                          {user.email ||
+                            "-"}
                         </td>
+                      )}
 
-                      </tr>
-                    )
-                  )
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-delete-button"
+                          onClick={() =>
+                            deleteUser(
+                              user
+                            )
+                          }
+                        >
+                          Hapus
+                        </button>
+                      </td>
+                    </tr>
+                  ))
                 )}
-
               </tbody>
-
             </table>
-
           </div>
         )}
-
       </section>
     );
   }
 
   function renderContent() {
     switch (activeMenu) {
-
       case "dashboard":
         return renderDashboard();
 
@@ -785,9 +731,7 @@ function AdminDashboard() {
 
   return (
     <div className="admin-page">
-
       <header className="admin-header">
-
         <div>
           <h1>
             Panel Admin
@@ -800,12 +744,12 @@ function AdminDashboard() {
         </div>
 
         <button
+          type="button"
           className="admin-logout"
           onClick={logout}
         >
           Keluar
         </button>
-
       </header>
 
       {error && (
@@ -821,29 +765,32 @@ function AdminDashboard() {
       )}
 
       <div className="admin-layout">
-
         <aside className="admin-sidebar">
-
           <div className="admin-sidebar-title">
             Menu Admin
           </div>
 
           <button
+            type="button"
             className={
-              activeMenu === "dashboard"
+              activeMenu ===
+              "dashboard"
                 ? "admin-nav-button active"
                 : "admin-nav-button"
             }
-            onClick={() =>
+            onClick={() => {
               setActiveMenu(
                 "dashboard"
-              )
-            }
+              );
+              setMessage("");
+              setError("");
+            }}
           >
             Dashboard
           </button>
 
           <button
+            type="button"
             className={
               [
                 "users",
@@ -861,57 +808,66 @@ function AdminDashboard() {
           </button>
 
           <button
+            type="button"
             className={
-              activeMenu === "attendance"
+              activeMenu ===
+              "attendance"
                 ? "admin-nav-button active"
                 : "admin-nav-button"
             }
-            onClick={() =>
+            onClick={() => {
               setActiveMenu(
                 "attendance"
-              )
-            }
+              );
+              setMessage("");
+              setError("");
+            }}
           >
             Data Absensi
           </button>
 
           <button
+            type="button"
             className={
               activeMenu ===
               "permissions"
                 ? "admin-nav-button active"
                 : "admin-nav-button"
             }
-            onClick={() =>
+            onClick={() => {
               setActiveMenu(
                 "permissions"
-              )
-            }
+              );
+              setMessage("");
+              setError("");
+            }}
           >
             Pengajuan Izin
           </button>
 
           <button
+            type="button"
             className={
-              activeMenu === "settings"
+              activeMenu ===
+              "settings"
                 ? "admin-nav-button active"
                 : "admin-nav-button"
             }
-            onClick={() =>
+            onClick={() => {
               setActiveMenu(
                 "settings"
-              )
-            }
+              );
+              setMessage("");
+              setError("");
+            }}
           >
             Pengaturan
           </button>
-
         </aside>
 
         <main className="admin-main">
           {renderContent()}
         </main>
-
       </div>
     </div>
   );
