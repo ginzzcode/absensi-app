@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
+import re
 from bson import ObjectId
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Header
@@ -390,7 +391,6 @@ def login(data: LoginRequest):
         "teacher",
         "admin"
     ]:
-
         raise HTTPException(
             status_code=400,
             detail="Role tidak valid"
@@ -406,37 +406,39 @@ def login(data: LoginRequest):
     elif role == "teacher":
 
         user = users_collection.find_one({
-            "email": identifier.lower(),
+            "email": {
+                "$regex": f"^{re.escape(identifier)}$",
+                "$options": "i"
+            },
             "role": "teacher"
         })
 
     else:
 
         user = users_collection.find_one({
-            "email": identifier.lower(),
+            "email": {
+                "$regex": f"^{re.escape(identifier)}$",
+                "$options": "i"
+            },
             "role": "admin"
         })
 
     if not user:
-
         raise HTTPException(
             status_code=401,
             detail="Akun tidak ditemukan"
         )
 
     try:
-
         password_valid = password_hash.verify(
             data.password,
             user["password_hash"]
         )
 
     except Exception:
-
         password_valid = False
 
     if not password_valid:
-
         raise HTTPException(
             status_code=401,
             detail="Password salah"
@@ -457,8 +459,6 @@ def login(data: LoginRequest):
             "class_name": user.get("class_name"),
         }
     }
-
-
 # =========================================
 # CURRENT USER
 # =========================================
