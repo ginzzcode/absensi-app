@@ -58,7 +58,7 @@ app.add_middleware(
         "http://192.168.101.5:5173",
         "https://absensi-app-ginzz.vercel.app",
         "https://absensi-app-git-main-ginzz.vercel.app",
-        "https://absensi-14i66ap7e-ginzz.vercel.app",
+        "https://absensi-cp3gb2nw4-ginzz.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
