@@ -18,23 +18,28 @@ function StudentDashboard() {
 
   const [attendanceHistory, setAttendanceHistory] =
     useState([]);
+
   const [historyLoading, setHistoryLoading] =
     useState(true);
 
-  const [permissions, setPermissions] = useState([]);
+  const [permissions, setPermissions] =
+    useState([]);
+
   const [permissionLoading, setPermissionLoading] =
     useState(true);
 
-  const [permissionForm, setPermissionForm] = useState({
-    date: "",
-    reason: "",
-    description: "",
-  });
+  const [permissionForm, setPermissionForm] =
+    useState({
+      date: "",
+      reason: "",
+      description: "",
+    });
 
   const [permissionSubmitting, setPermissionSubmitting] =
     useState(false);
 
   const scannerRef = useRef(null);
+  const processingQrRef = useRef(false);
 
   // =========================
   // LOAD USER
@@ -107,7 +112,11 @@ function StudentDashboard() {
       setAttendanceHistory(data.history || []);
     } catch (err) {
       console.error(err);
-      setError(err.message);
+
+      setError(
+        err.message ||
+          "Gagal mengambil riwayat absensi."
+      );
     } finally {
       setHistoryLoading(false);
     }
@@ -152,7 +161,11 @@ function StudentDashboard() {
       );
     } catch (err) {
       console.error(err);
-      setError(err.message);
+
+      setError(
+        err.message ||
+          "Gagal mengambil data izin."
+      );
     } finally {
       setPermissionLoading(false);
     }
@@ -242,82 +255,51 @@ function StudentDashboard() {
     setError("");
     setMessage("");
 
-    try {
-      // =========================
-      // CEK HTTPS
-      // =========================
+    if (scanning) {
+      return;
+    }
 
+    try {
+      // Kamera pada browser HP membutuhkan HTTPS.
       if (!window.isSecureContext) {
         throw new Error(
-          "Kamera membutuhkan HTTPS saat dibuka dari HP."
+          "Kamera membutuhkan HTTPS. Pastikan membuka website dari alamat HTTPS."
         );
       }
 
-      // =========================
-      // CEK SUPPORT KAMERA
-      // =========================
-
+      // Pastikan API kamera tersedia.
       if (
         !navigator.mediaDevices ||
         !navigator.mediaDevices.getUserMedia
       ) {
         throw new Error(
-          "Browser tidak mendukung akses kamera."
+          "Browser ini tidak mendukung akses kamera."
         );
       }
 
-      // =========================
-      // CEK SCANNER LAMA
-      // =========================
-
+      // Bersihkan scanner sebelumnya jika ada.
       if (scannerRef.current) {
         await stopScanner();
       }
 
-      // =========================
-      // MINTA IZIN KAMERA
-      // =========================
-
-      const permissionStream =
-        await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: {
-              ideal: "environment",
-            },
-          },
-          audio: false,
-        });
-
-      // Tutup stream sementara.
-      // Html5Qrcode akan membuka kamera
-      // kembali ketika scanner dimulai.
-      permissionStream
-        .getTracks()
-        .forEach((track) => {
-          track.stop();
-        });
-
-      // =========================
-      // BUAT SCANNER
-      // =========================
+      processingQrRef.current = false;
 
       const scanner = new Html5Qrcode(
         "student-qr-reader"
       );
 
-      scanner.processingQr = false;
-
       scannerRef.current = scanner;
 
+      // Tampilkan area scanner sebelum meminta kamera.
       setScanning(true);
 
-      // =========================
-      // MULAI SCANNER
-      // =========================
-
+      // Html5Qrcode sekarang menjadi satu-satunya
+      // yang meminta dan mengelola kamera.
       await scanner.start(
         {
-          facingMode: "environment",
+          facingMode: {
+            ideal: "environment",
+          },
         },
         {
           fps: 10,
@@ -325,11 +307,21 @@ function StudentDashboard() {
             width: 240,
             height: 240,
           },
+          aspectRatio: 1,
         },
         async (decodedText) => {
+          if (processingQrRef.current) {
+            return;
+          }
+
+          processingQrRef.current = true;
+
           await handleQrResult(decodedText);
         },
-        () => {}
+        () => {
+          // QR belum ditemukan.
+          // Tidak perlu menampilkan error setiap frame.
+        }
       );
     } catch (err) {
       console.error(
@@ -338,6 +330,8 @@ function StudentDashboard() {
       );
 
       scannerRef.current = null;
+      processingQrRef.current = false;
+
       setScanning(false);
 
       let errorMessage =
@@ -345,6 +339,11 @@ function StudentDashboard() {
 
       if (
         err.name === "NotAllowedError"
+      ) {
+        errorMessage =
+          "Izin kamera ditolak. Izinkan kamera untuk situs ini melalui pengaturan izin kamera browser.";
+      } else if (
+        err.name === "PermissionDeniedError"
       ) {
         errorMessage =
           "Izin kamera ditolak. Izinkan kamera untuk situs ini melalui pengaturan browser.";
@@ -363,6 +362,11 @@ function StudentDashboard() {
       ) {
         errorMessage =
           "Browser memblokir akses kamera.";
+      } else if (
+        err.name === "OverconstrainedError"
+      ) {
+        errorMessage =
+          "Kamera belakang tidak dapat digunakan. Coba gunakan kamera lain.";
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -378,7 +382,10 @@ function StudentDashboard() {
   const stopScanner = async () => {
     const scanner = scannerRef.current;
 
+    processingQrRef.current = false;
+
     if (!scanner) {
+      setScanning(false);
       return;
     }
 
@@ -386,11 +393,18 @@ function StudentDashboard() {
       if (scanner.isScanning) {
         await scanner.stop();
       }
+    } catch (err) {
+      console.error(
+        "Scanner stop error:",
+        err
+      );
+    }
 
+    try {
       await scanner.clear();
     } catch (err) {
       console.error(
-        "Scanner cleanup error:",
+        "Scanner clear error:",
         err
       );
     }
@@ -404,17 +418,7 @@ function StudentDashboard() {
   // =========================
 
   const handleQrResult = async (decodedText) => {
-    if (
-      scannerRef.current?.processingQr
-    ) {
-      return;
-    }
-
     try {
-      if (scannerRef.current) {
-        scannerRef.current.processingQr = true;
-      }
-
       setError("");
       setMessage("");
 
@@ -423,10 +427,7 @@ function StudentDashboard() {
       try {
         qrData = JSON.parse(decodedText);
       } catch {
-        if (scannerRef.current) {
-          scannerRef.current.processingQr = false;
-        }
-
+        processingQrRef.current = false;
         return;
       }
 
@@ -435,9 +436,7 @@ function StudentDashboard() {
         qrData.type !== "attendance" ||
         !qrData.session_code
       ) {
-        if (scannerRef.current) {
-          scannerRef.current.processingQr = false;
-        }
+        processingQrRef.current = false;
 
         setError(
           "QR tersebut bukan QR absensi sekolah."
@@ -450,6 +449,7 @@ function StudentDashboard() {
         localStorage.getItem("token");
 
       if (!token) {
+        await stopScanner();
         navigate("/");
         return;
       }
@@ -497,10 +497,7 @@ function StudentDashboard() {
           "Absensi gagal."
       );
 
-      if (scannerRef.current) {
-        scannerRef.current.processingQr =
-          false;
-      }
+      processingQrRef.current = false;
     }
   };
 
@@ -508,8 +505,8 @@ function StudentDashboard() {
   // LOGOUT
   // =========================
 
-  const handleLogout = () => {
-    stopScanner();
+  const handleLogout = async () => {
+    await stopScanner();
 
     localStorage.removeItem("token");
     localStorage.removeItem("user");
