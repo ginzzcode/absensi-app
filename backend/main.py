@@ -59,6 +59,7 @@ app.add_middleware(
         "https://absensi-app-ginzz.vercel.app",
         "https://absensi-app-git-main-ginzz.vercel.app",
         "https://absensi-cp3gb2nw4-ginzz.vercel.app",
+        "https://absensi-qbo6x3znp-ginzz.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
