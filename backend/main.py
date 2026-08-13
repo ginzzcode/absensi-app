@@ -37,12 +37,25 @@ if not JWT_SECRET_KEY:
 
 
 # =========================================
+# CONSTANTS
+# =========================================
+
+CLASS_LETTERS = list("ABCDEFGHIJK")
+
+VALID_CLASSES = [
+    f"{grade}{letter}"
+    for grade in [7, 8, 9]
+    for letter in CLASS_LETTERS
+]
+
+
+# =========================================
 # APP
 # =========================================
 
 app = FastAPI(
     title="Absensi Sekolah API",
-    version="1.2.0"
+    version="1.3.0"
 )
 
 
@@ -56,11 +69,13 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://192.168.101.5:5173",
+
         "https://absensi-app-ginzz.vercel.app",
         "https://absensi-app-git-main-ginzz.vercel.app",
         "https://absensi-cp3gb2nw4-ginzz.vercel.app",
         "https://absensi-qbo6x3znp-ginzz.vercel.app",
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -129,7 +144,6 @@ class UpdatePermissionRequest(BaseModel):
     teacher_reply: str
 
 
-# ADMIN
 class CreateUserRequest(BaseModel):
     name: str
     role: str
@@ -144,20 +158,24 @@ class UpdateUserPasswordRequest(BaseModel):
 
 
 # =========================================
-# HELPER
+# CLASS HELPER
 # =========================================
 
 def normalize_class_name(class_name):
     """
-    Mengubah berbagai format kelas menjadi
-    kode kelas sederhana.
+    Menormalkan format kelas menjadi:
+
+    7A - 7K
+    8A - 8K
+    9A - 9K
 
     Contoh:
-    A       -> A
-    a       -> A
-    IX-A    -> A
-    VIII-B  -> B
-    9A      -> A
+    7A      -> 7A
+    7-A     -> 7A
+    VII-A   -> 7A
+    VIII-B  -> 8B
+    IX-C    -> 9C
+    9A      -> 9A
     """
 
     if not class_name:
@@ -165,17 +183,25 @@ def normalize_class_name(class_name):
 
     value = str(class_name).strip().upper()
 
-    if "-" in value:
-        last_part = value.split("-")[-1].strip()
+    value = value.replace(" ", "")
+    value = value.replace("-", "")
 
-        if last_part in list("ABCDEFGHIJK"):
-            return last_part
+    roman_to_number = {
+        "VII": "7",
+        "VIII": "8",
+        "IX": "9",
+    }
 
-    for letter in "ABCDEFGHIJK":
-        if value.endswith(letter):
-            return letter
+    for roman, number in roman_to_number.items():
 
-    if value in list("ABCDEFGHIJK"):
+        if value.startswith(roman):
+            value = (
+                number
+                + value[len(roman):]
+            )
+            break
+
+    if value in VALID_CLASSES:
         return value
 
     return value
@@ -193,6 +219,7 @@ def get_object_id(value):
 # =========================================
 
 def create_access_token(user):
+
     payload = {
         "sub": str(user["_id"]),
         "role": user["role"],
@@ -213,6 +240,7 @@ def create_access_token(user):
 def get_current_user(
     authorization: str | None = Header(default=None)
 ):
+
     if not authorization:
         raise HTTPException(
             status_code=401,
@@ -231,6 +259,7 @@ def get_current_user(
     )[1]
 
     try:
+
         payload = jwt.decode(
             token,
             JWT_SECRET_KEY,
@@ -240,12 +269,14 @@ def get_current_user(
         return payload
 
     except jwt.ExpiredSignatureError:
+
         raise HTTPException(
             status_code=401,
             detail="Token sudah expired"
         )
 
     except jwt.InvalidTokenError:
+
         raise HTTPException(
             status_code=401,
             detail="Token tidak valid"
@@ -255,9 +286,13 @@ def get_current_user(
 def require_teacher(
     authorization: str | None = Header(default=None)
 ):
-    payload = get_current_user(authorization)
+
+    payload = get_current_user(
+        authorization
+    )
 
     if payload.get("role") != "teacher":
+
         raise HTTPException(
             status_code=403,
             detail="Akses hanya untuk guru"
@@ -269,9 +304,13 @@ def require_teacher(
 def require_student(
     authorization: str | None = Header(default=None)
 ):
-    payload = get_current_user(authorization)
+
+    payload = get_current_user(
+        authorization
+    )
 
     if payload.get("role") != "student":
+
         raise HTTPException(
             status_code=403,
             detail="Akses hanya untuk siswa"
@@ -283,9 +322,13 @@ def require_student(
 def require_admin(
     authorization: str | None = Header(default=None)
 ):
-    payload = get_current_user(authorization)
+
+    payload = get_current_user(
+        authorization
+    )
 
     if payload.get("role") != "admin":
+
         raise HTTPException(
             status_code=403,
             detail="Akses hanya untuk admin"
@@ -300,8 +343,10 @@ def require_admin(
 
 @app.get("/")
 def root():
+
     return {
-        "message": "Absensi Sekolah API berjalan"
+        "message": "Absensi Sekolah API berjalan",
+        "version": "1.3.0"
     }
 
 
@@ -313,6 +358,7 @@ def root():
 def health_check():
 
     try:
+
         client.admin.command("ping")
 
         return {
@@ -344,12 +390,12 @@ def login(data: LoginRequest):
         "teacher",
         "admin"
     ]:
+
         raise HTTPException(
             status_code=400,
             detail="Role tidak valid"
         )
 
-        # STUDENT
     if role == "student":
 
         user = users_collection.find_one({
@@ -357,26 +403,26 @@ def login(data: LoginRequest):
             "role": "student"
         })
 
-    # TEACHER + ADMIN
     elif role == "teacher":
 
         user = users_collection.find_one({
             "email": identifier.lower(),
-            "role": {
-                "$in": [
-                    "teacher",
-                    "admin"
-                ]
-            }
+            "role": "teacher"
         })
 
-    # ADMIN
     else:
 
         user = users_collection.find_one({
             "email": identifier.lower(),
             "role": "admin"
         })
+
+    if not user:
+
+        raise HTTPException(
+            status_code=401,
+            detail="Akun tidak ditemukan"
+        )
 
     try:
 
@@ -390,6 +436,7 @@ def login(data: LoginRequest):
         password_valid = False
 
     if not password_valid:
+
         raise HTTPException(
             status_code=401,
             detail="Password salah"
@@ -407,9 +454,7 @@ def login(data: LoginRequest):
             "role": user["role"],
             "nis": user.get("nis"),
             "email": user.get("email"),
-            "class_name": user.get(
-                "class_name"
-            ),
+            "class_name": user.get("class_name"),
         }
     }
 
@@ -435,6 +480,55 @@ def auth_me(
 
 
 # =========================================
+# ADMIN DASHBOARD
+# =========================================
+
+@app.get("/api/admin/dashboard")
+def admin_dashboard(
+    authorization: str | None = Header(default=None)
+):
+
+    require_admin(authorization)
+
+    today = datetime.now(
+        timezone.utc
+    ).strftime("%Y-%m-%d")
+
+    total_students = users_collection.count_documents({
+        "role": "student"
+    })
+
+    total_teachers = users_collection.count_documents({
+        "role": "teacher"
+    })
+
+    total_admins = users_collection.count_documents({
+        "role": "admin"
+    })
+
+    total_classes = len(VALID_CLASSES)
+
+    attendance_today = attendance_collection.count_documents({
+        "date": today
+    })
+
+    permissions_pending = permissions_collection.count_documents({
+        "status": "pending"
+    })
+
+    return {
+        "statistics": {
+            "total_students": total_students,
+            "total_teachers": total_teachers,
+            "total_classes": total_classes,
+            "total_admins": total_admins,
+            "attendance_today": attendance_today,
+            "permissions_pending": permissions_pending
+        }
+    }
+
+
+# =========================================
 # ADMIN - GET USERS
 # =========================================
 
@@ -450,6 +544,7 @@ def admin_get_users(
     query = {}
 
     if role:
+
         role = role.strip().lower()
 
         if role not in [
@@ -457,6 +552,7 @@ def admin_get_users(
             "teacher",
             "admin"
         ]:
+
             raise HTTPException(
                 status_code=400,
                 detail="Role tidak valid"
@@ -465,9 +561,19 @@ def admin_get_users(
         query["role"] = role
 
     if class_name:
-        query["class_name"] = normalize_class_name(
+
+        normalized_class = normalize_class_name(
             class_name
         )
+
+        if normalized_class not in VALID_CLASSES:
+
+            raise HTTPException(
+                status_code=400,
+                detail="Kelas tidak valid"
+            )
+
+        query["class_name"] = normalized_class
 
     users = list(
         users_collection.find(
@@ -501,119 +607,20 @@ def admin_get_users(
             "email": user.get(
                 "email"
             ),
-            "class_name": normalize_class_name(
-                user.get(
-                    "class_name",
-                    ""
+            "class_name": (
+                normalize_class_name(
+                    user.get(
+                        "class_name",
+                        ""
+                    )
                 )
-            ) or None
+                or None
+            )
         })
 
     return {
         "users": result,
         "total": len(result)
-    }
-
-# =========================================
-# ADMIN - DASHBOARD STATISTICS
-# =========================================
-
-@app.get("/api/admin/dashboard")
-def admin_dashboard(
-    authorization: str | None = Header(default=None)
-):
-
-    require_admin(authorization)
-
-    # =====================================
-    # TOTAL SISWA
-    # =====================================
-
-    total_students = users_collection.count_documents({
-        "role": "student"
-    })
-
-    # =====================================
-    # TOTAL GURU
-    # =====================================
-
-    total_teachers = users_collection.count_documents({
-        "role": "teacher"
-    })
-
-    # =====================================
-    # TOTAL ADMIN
-    # =====================================
-
-    total_admins = users_collection.count_documents({
-        "role": "admin"
-    })
-
-    # =====================================
-    # TOTAL KELAS
-    # =====================================
-
-    class_names = users_collection.distinct(
-        "class_name",
-        {
-            "role": "student",
-            "class_name": {
-                "$exists": True,
-                "$ne": None,
-                "$ne": ""
-            }
-        }
-    )
-
-    normalized_classes = set()
-
-    for class_name in class_names:
-        normalized = normalize_class_name(
-            class_name
-        )
-
-        if normalized in list("ABCDEFGHIJK"):
-            normalized_classes.add(
-                normalized
-            )
-
-    total_classes = len(
-        normalized_classes
-    )
-
-    # =====================================
-    # ABSENSI HARI INI
-    # =====================================
-
-    today = datetime.now(
-        timezone.utc
-    ).strftime("%Y-%m-%d")
-
-    attendance_today = attendance_collection.count_documents({
-        "date": today
-    })
-
-    # =====================================
-    # IZIN PENDING
-    # =====================================
-
-    permissions_pending = permissions_collection.count_documents({
-        "status": "pending"
-    })
-
-    # =====================================
-    # RESPONSE
-    # =====================================
-
-    return {
-        "statistics": {
-            "total_students": total_students,
-            "total_teachers": total_teachers,
-            "total_admins": total_admins,
-            "total_classes": total_classes,
-            "attendance_today": attendance_today,
-            "permissions_pending": permissions_pending
-        }
     }
 
 
@@ -653,11 +660,8 @@ def admin_create_user(
         else None
     )
 
-    # =====================================
-    # VALIDASI UMUM
-    # =====================================
-
     if not name:
+
         raise HTTPException(
             status_code=400,
             detail="Nama wajib diisi"
@@ -667,47 +671,54 @@ def admin_create_user(
         "student",
         "teacher"
     ]:
+
         raise HTTPException(
             status_code=400,
             detail="Role akun harus student atau teacher"
         )
 
     if not password.strip():
+
         raise HTTPException(
             status_code=400,
             detail="Password wajib diisi"
         )
 
     if len(password) < 6:
+
         raise HTTPException(
             status_code=400,
             detail="Password minimal 6 karakter"
         )
 
     # =====================================
-    # VALIDASI SISWA
+    # STUDENT
     # =====================================
 
     if role == "student":
 
         if not nis:
+
             raise HTTPException(
                 status_code=400,
                 detail="NIS wajib diisi untuk siswa"
             )
 
         if not class_name:
+
             raise HTTPException(
                 status_code=400,
                 detail="Kelas wajib diisi untuk siswa"
             )
 
-        if class_name not in list(
-            "ABCDEFGHIJK"
-        ):
+        if class_name not in VALID_CLASSES:
+
             raise HTTPException(
                 status_code=400,
-                detail="Kelas tidak valid"
+                detail=(
+                    "Kelas tidak valid. "
+                    "Gunakan 7A-7K, 8A-8K, atau 9A-9K"
+                )
             )
 
         existing_nis = users_collection.find_one({
@@ -715,18 +726,20 @@ def admin_create_user(
         })
 
         if existing_nis:
+
             raise HTTPException(
                 status_code=400,
                 detail="NIS sudah digunakan"
             )
 
     # =====================================
-    # VALIDASI GURU
+    # TEACHER
     # =====================================
 
     if role == "teacher":
 
         if not email:
+
             raise HTTPException(
                 status_code=400,
                 detail="Email wajib diisi untuk guru"
@@ -737,13 +750,14 @@ def admin_create_user(
         })
 
         if existing_email:
+
             raise HTTPException(
                 status_code=400,
                 detail="Email sudah digunakan"
             )
 
     # =====================================
-    # BUAT USER
+    # CREATE
     # =====================================
 
     now = datetime.now(
@@ -806,6 +820,7 @@ def admin_update_password(
     )
 
     if not object_id:
+
         raise HTTPException(
             status_code=400,
             detail="ID akun tidak valid"
@@ -814,12 +829,14 @@ def admin_update_password(
     password = data.password
 
     if not password.strip():
+
         raise HTTPException(
             status_code=400,
             detail="Password wajib diisi"
         )
 
     if len(password) < 6:
+
         raise HTTPException(
             status_code=400,
             detail="Password minimal 6 karakter"
@@ -830,6 +847,7 @@ def admin_update_password(
     })
 
     if not user:
+
         raise HTTPException(
             status_code=404,
             detail="Akun tidak ditemukan"
@@ -877,17 +895,20 @@ def admin_delete_user(
     )
 
     if not object_id:
+
         raise HTTPException(
             status_code=400,
             detail="ID akun tidak valid"
         )
 
-    # Jangan izinkan admin menghapus
-    # akun admin yang sedang digunakan.
     if user_id == admin.get("sub"):
+
         raise HTTPException(
             status_code=400,
-            detail="Akun admin yang sedang digunakan tidak dapat dihapus"
+            detail=(
+                "Akun admin yang sedang "
+                "digunakan tidak dapat dihapus"
+            )
         )
 
     user = users_collection.find_one({
@@ -895,17 +916,20 @@ def admin_delete_user(
     })
 
     if not user:
+
         raise HTTPException(
             status_code=404,
             detail="Akun tidak ditemukan"
         )
 
-    # Jangan izinkan penghapusan akun admin
-    # melalui panel untuk keamanan.
     if user.get("role") == "admin":
+
         raise HTTPException(
             status_code=403,
-            detail="Akun admin tidak dapat dihapus melalui panel"
+            detail=(
+                "Akun admin tidak dapat "
+                "dihapus melalui panel"
+            )
         )
 
     users_collection.delete_one({
@@ -919,7 +943,7 @@ def admin_delete_user(
 
 
 # =========================================
-# GET STUDENTS
+# GET STUDENTS FOR TEACHER
 # =========================================
 
 @app.get("/api/teacher/students")
@@ -934,7 +958,8 @@ def get_students(
         class_name
     )
 
-    if class_name not in list("ABCDEFGHIJK"):
+    if class_name not in VALID_CLASSES:
+
         raise HTTPException(
             status_code=400,
             detail="Kelas tidak valid"
@@ -943,7 +968,8 @@ def get_students(
     students = list(
         users_collection.find(
             {
-                "role": "student"
+                "role": "student",
+                "class_name": class_name
             },
             {
                 "password_hash": 0
@@ -958,16 +984,6 @@ def get_students(
 
     for student in students:
 
-        student_class = normalize_class_name(
-            student.get(
-                "class_name",
-                ""
-            )
-        )
-
-        if student_class != class_name:
-            continue
-
         result.append({
             "id": str(student["_id"]),
             "name": student.get(
@@ -978,7 +994,7 @@ def get_students(
                 "nis",
                 "-"
             ),
-            "class_name": student_class
+            "class_name": class_name
         })
 
     return {
@@ -989,7 +1005,7 @@ def get_students(
 
 
 # =========================================
-# HISTORI ABSENSI SISWA
+# STUDENT ATTENDANCE HISTORY
 # =========================================
 
 @app.get(
@@ -1084,6 +1100,13 @@ def get_today_attendance(
         class_name
     )
 
+    if class_name not in VALID_CLASSES:
+
+        raise HTTPException(
+            status_code=400,
+            detail="Kelas tidak valid"
+        )
+
     today = datetime.now(
         timezone.utc
     ).strftime("%Y-%m-%d")
@@ -1091,7 +1114,8 @@ def get_today_attendance(
     students = list(
         users_collection.find(
             {
-                "role": "student"
+                "role": "student",
+                "class_name": class_name
             },
             {
                 "password_hash": 0
@@ -1130,16 +1154,6 @@ def get_today_attendance(
 
     for student in students:
 
-        student_class = normalize_class_name(
-            student.get(
-                "class_name",
-                ""
-            )
-        )
-
-        if student_class != class_name:
-            continue
-
         student_id = str(
             student["_id"]
         )
@@ -1161,7 +1175,7 @@ def get_today_attendance(
                 "-"
             ),
 
-            "class_name": student_class,
+            "class_name": class_name,
 
             "status": (
                 attendance.get(
@@ -1206,7 +1220,8 @@ def create_attendance_session(
         data.class_name
     )
 
-    if class_name not in list("ABCDEFGHIJK"):
+    if class_name not in VALID_CLASSES:
+
         raise HTTPException(
             status_code=400,
             detail="Kelas tidak valid"
@@ -1261,7 +1276,7 @@ def create_attendance_session(
 
 
 # =========================================
-# END ATTENDANCE SESSION
+# STOP ATTENDANCE SESSION
 # =========================================
 
 @app.post(
@@ -1282,6 +1297,7 @@ def stop_attendance_session(
     })
 
     if not session:
+
         raise HTTPException(
             status_code=404,
             detail="Sesi tidak ditemukan"
@@ -1319,9 +1335,7 @@ def scan_attendance(
         authorization
     )
 
-    session_code = (
-        data.session_code.strip()
-    )
+    session_code = data.session_code.strip()
 
     session = attendance_sessions_collection.find_one({
         "session_code": session_code,
@@ -1329,9 +1343,13 @@ def scan_attendance(
     })
 
     if not session:
+
         raise HTTPException(
             status_code=404,
-            detail="QR tidak valid atau sesi sudah berakhir"
+            detail=(
+                "QR tidak valid atau "
+                "sesi sudah berakhir"
+            )
         )
 
     now = datetime.now(
@@ -1343,12 +1361,14 @@ def scan_attendance(
     )
 
     if expires_at is None:
+
         raise HTTPException(
             status_code=500,
             detail="Data waktu sesi tidak valid"
         )
 
     if expires_at.tzinfo is None:
+
         expires_at = expires_at.replace(
             tzinfo=timezone.utc
         )
@@ -1376,6 +1396,7 @@ def scan_attendance(
     )
 
     if not student_id:
+
         raise HTTPException(
             status_code=400,
             detail="ID siswa tidak valid"
@@ -1387,6 +1408,7 @@ def scan_attendance(
     })
 
     if not student_data:
+
         raise HTTPException(
             status_code=404,
             detail="Data siswa tidak ditemukan"
@@ -1407,6 +1429,7 @@ def scan_attendance(
     )
 
     if student_class != session_class:
+
         raise HTTPException(
             status_code=403,
             detail=(
@@ -1422,6 +1445,7 @@ def scan_attendance(
     })
 
     if existing:
+
         raise HTTPException(
             status_code=400,
             detail="Kamu sudah melakukan absensi"
@@ -1463,7 +1487,7 @@ def scan_attendance(
 
 
 # =========================================
-# IZIN SISWA
+# CREATE STUDENT PERMISSION
 # =========================================
 
 @app.post(
@@ -1483,29 +1507,35 @@ def create_permission(
     description = data.description.strip()
 
     if not date:
+
         raise HTTPException(
             status_code=400,
             detail="Tanggal izin wajib diisi"
         )
 
     if not reason:
+
         raise HTTPException(
             status_code=400,
             detail="Alasan izin wajib diisi"
         )
 
     if not description:
+
         raise HTTPException(
             status_code=400,
             detail="Keterangan izin wajib diisi"
         )
 
     try:
+
         datetime.strptime(
             date,
             "%Y-%m-%d"
         )
+
     except ValueError:
+
         raise HTTPException(
             status_code=400,
             detail="Format tanggal harus YYYY-MM-DD"
@@ -1516,6 +1546,7 @@ def create_permission(
     )
 
     if not student_id:
+
         raise HTTPException(
             status_code=400,
             detail="ID siswa tidak valid"
@@ -1527,6 +1558,7 @@ def create_permission(
     })
 
     if not student_data:
+
         raise HTTPException(
             status_code=404,
             detail="Data siswa tidak ditemukan"
@@ -1546,6 +1578,7 @@ def create_permission(
     })
 
     if existing:
+
         raise HTTPException(
             status_code=400,
             detail=(
@@ -1592,7 +1625,7 @@ def create_permission(
 
 
 # =========================================
-# RIWAYAT IZIN SISWA
+# STUDENT PERMISSIONS
 # =========================================
 
 @app.get(
@@ -1677,7 +1710,7 @@ def get_student_permissions(
 
 
 # =========================================
-# GET SEMUA IZIN UNTUK GURU
+# TEACHER PERMISSIONS
 # =========================================
 
 @app.get(
@@ -1694,6 +1727,7 @@ def get_teacher_permissions(
     query = {}
 
     if status:
+
         status = status.strip().lower()
 
         if status not in [
@@ -1701,6 +1735,7 @@ def get_teacher_permissions(
             "approved",
             "rejected"
         ]:
+
             raise HTTPException(
                 status_code=400,
                 detail="Status tidak valid"
@@ -1709,9 +1744,19 @@ def get_teacher_permissions(
         query["status"] = status
 
     if class_name:
-        query["class_name"] = normalize_class_name(
+
+        normalized_class = normalize_class_name(
             class_name
         )
+
+        if normalized_class not in VALID_CLASSES:
+
+            raise HTTPException(
+                status_code=400,
+                detail="Kelas tidak valid"
+            )
+
+        query["class_name"] = normalized_class
 
     records = list(
         permissions_collection.find(
@@ -1806,7 +1851,7 @@ def get_teacher_permissions(
 
 
 # =========================================
-# GURU MEMPROSES IZIN
+# UPDATE PERMISSION
 # =========================================
 
 @app.put(
@@ -1827,6 +1872,7 @@ def update_permission(
     )
 
     if not permission_object_id:
+
         raise HTTPException(
             status_code=400,
             detail="ID pengajuan izin tidak valid"
@@ -1839,6 +1885,7 @@ def update_permission(
         "approved",
         "rejected"
     ]:
+
         raise HTTPException(
             status_code=400,
             detail=(
@@ -1848,6 +1895,7 @@ def update_permission(
         )
 
     if not teacher_reply:
+
         raise HTTPException(
             status_code=400,
             detail="Balasan guru wajib diisi"
@@ -1858,17 +1906,17 @@ def update_permission(
     })
 
     if not permission:
+
         raise HTTPException(
             status_code=404,
             detail="Pengajuan izin tidak ditemukan"
         )
 
     if permission.get("status") != "pending":
+
         raise HTTPException(
             status_code=400,
-            detail=(
-                "Pengajuan izin ini sudah diproses"
-            )
+            detail="Pengajuan izin ini sudah diproses"
         )
 
     now = datetime.now(
@@ -1971,11 +2019,13 @@ def status():
     return {
         "application": "Absensi Sekolah",
         "status": "running",
-        "version": "1.2.0",
-        "classes": list("ABCDEFGHIJK"),
+        "version": "1.3.0",
+        "classes": VALID_CLASSES,
+        "total_classes": len(VALID_CLASSES),
         "features": [
             "login",
             "admin",
+            "admin_dashboard",
             "admin_user_management",
             "qr_attendance",
             "attendance_history",
@@ -1983,384 +2033,4 @@ def status():
             "teacher_permission_approval",
             "teacher_reply"
         ]
-    }
-
-# =========================================
-# ADMIN - DASHBOARD SUMMARY
-# =========================================
-
-@app.get("/api/admin/dashboard")
-def admin_dashboard(
-    authorization: str | None = Header(default=None)
-):
-    require_admin(authorization)
-
-    today = datetime.now(
-        timezone.utc
-    ).strftime("%Y-%m-%d")
-
-    total_students = users_collection.count_documents({
-        "role": "student"
-    })
-
-    total_teachers = users_collection.count_documents({
-        "role": "teacher"
-    })
-
-    total_admins = users_collection.count_documents({
-        "role": "admin"
-    })
-
-    total_classes = len(
-        users_collection.distinct(
-            "class_name",
-            {
-                "role": "student",
-                "class_name": {
-                    "$exists": True,
-                    "$ne": ""
-                }
-            }
-        )
-    )
-
-    attendance_today = attendance_collection.count_documents({
-        "date": today
-    })
-
-    permissions_pending = permissions_collection.count_documents({
-        "status": "pending"
-    })
-
-    permissions_today = permissions_collection.count_documents({
-        "date": today
-    })
-
-    return {
-        "date": today,
-        "statistics": {
-            "total_students": total_students,
-            "total_teachers": total_teachers,
-            "total_admins": total_admins,
-            "total_classes": total_classes,
-            "attendance_today": attendance_today,
-            "permissions_pending": permissions_pending,
-            "permissions_today": permissions_today
-        }
-    }
-
-
-# =========================================
-# ADMIN - GET ALL ATTENDANCE
-# =========================================
-
-@app.get("/api/admin/attendance")
-def admin_get_attendance(
-    date: str | None = None,
-    class_name: str | None = None,
-    status: str | None = None,
-    authorization: str | None = Header(default=None)
-):
-    require_admin(authorization)
-
-    query = {}
-
-    # -----------------------------------------
-    # FILTER TANGGAL
-    # -----------------------------------------
-
-    if date:
-        date = date.strip()
-
-        try:
-            datetime.strptime(
-                date,
-                "%Y-%m-%d"
-            )
-        except ValueError:
-            raise HTTPException(
-                status_code=400,
-                detail="Format tanggal harus YYYY-MM-DD"
-            )
-
-        query["date"] = date
-
-    # -----------------------------------------
-    # FILTER KELAS
-    # -----------------------------------------
-
-    if class_name:
-        normalized_class = normalize_class_name(
-            class_name
-        )
-
-        if normalized_class not in list(
-            "ABCDEFGHIJK"
-        ):
-            raise HTTPException(
-                status_code=400,
-                detail="Kelas tidak valid"
-            )
-
-        query["class_name"] = normalized_class
-
-    # -----------------------------------------
-    # FILTER STATUS
-    # -----------------------------------------
-
-    if status:
-        status = status.strip().lower()
-
-        if status not in [
-            "hadir",
-            "izin"
-        ]:
-            raise HTTPException(
-                status_code=400,
-                detail="Status absensi tidak valid"
-            )
-
-        query["status"] = status
-
-    records = list(
-        attendance_collection.find(
-            query
-        ).sort(
-            [
-                ("date", -1),
-                ("time", -1)
-            ]
-        )
-    )
-
-    result = []
-
-    for record in records:
-
-        result.append({
-            "id": str(record["_id"]),
-
-            "student_id": record.get(
-                "student_id"
-            ),
-
-            "student_name": record.get(
-                "student_name",
-                "-"
-            ),
-
-            "nis": record.get(
-                "nis"
-            ),
-
-            "class_name": normalize_class_name(
-                record.get(
-                    "class_name",
-                    ""
-                )
-            ),
-
-            "teacher_id": record.get(
-                "teacher_id"
-            ),
-
-            "teacher_name": record.get(
-                "teacher_name",
-                "-"
-            ),
-
-            "status": record.get(
-                "status",
-                "-"
-            ),
-
-            "date": record.get(
-                "date",
-                "-"
-            ),
-
-            "time": record.get(
-                "time"
-            ),
-
-            "session_code": record.get(
-                "session_code"
-            ),
-
-            "permission_id": record.get(
-                "permission_id"
-            )
-        })
-
-    return {
-        "attendance": result,
-        "total": len(result)
-    }
-
-
-# =========================================
-# ADMIN - GET ALL PERMISSIONS
-# =========================================
-
-@app.get("/api/admin/permissions")
-def admin_get_permissions(
-    status: str | None = None,
-    class_name: str | None = None,
-    date: str | None = None,
-    authorization: str | None = Header(default=None)
-):
-    require_admin(authorization)
-
-    query = {}
-
-    # -----------------------------------------
-    # FILTER STATUS
-    # -----------------------------------------
-
-    if status:
-        status = status.strip().lower()
-
-        if status not in [
-            "pending",
-            "approved",
-            "rejected"
-        ]:
-            raise HTTPException(
-                status_code=400,
-                detail="Status izin tidak valid"
-            )
-
-        query["status"] = status
-
-    # -----------------------------------------
-    # FILTER KELAS
-    # -----------------------------------------
-
-    if class_name:
-        normalized_class = normalize_class_name(
-            class_name
-        )
-
-        if normalized_class not in list(
-            "ABCDEFGHIJK"
-        ):
-            raise HTTPException(
-                status_code=400,
-                detail="Kelas tidak valid"
-            )
-
-        query["class_name"] = normalized_class
-
-    # -----------------------------------------
-    # FILTER TANGGAL
-    # -----------------------------------------
-
-    if date:
-        date = date.strip()
-
-        try:
-            datetime.strptime(
-                date,
-                "%Y-%m-%d"
-            )
-        except ValueError:
-            raise HTTPException(
-                status_code=400,
-                detail="Format tanggal harus YYYY-MM-DD"
-            )
-
-        query["date"] = date
-
-    records = list(
-        permissions_collection.find(
-            query
-        ).sort(
-            "created_at",
-            -1
-        )
-    )
-
-    result = []
-
-    for record in records:
-
-        created_at = record.get(
-            "created_at"
-        )
-
-        updated_at = record.get(
-            "updated_at"
-        )
-
-        result.append({
-            "id": str(record["_id"]),
-
-            "student_id": record.get(
-                "student_id"
-            ),
-
-            "student_name": record.get(
-                "student_name",
-                "-"
-            ),
-
-            "nis": record.get(
-                "nis"
-            ),
-
-            "class_name": normalize_class_name(
-                record.get(
-                    "class_name",
-                    ""
-                )
-            ),
-
-            "date": record.get(
-                "date",
-                "-"
-            ),
-
-            "reason": record.get(
-                "reason",
-                "-"
-            ),
-
-            "description": record.get(
-                "description",
-                "-"
-            ),
-
-            "status": record.get(
-                "status",
-                "pending"
-            ),
-
-            "teacher_reply": record.get(
-                "teacher_reply"
-            ),
-
-            "teacher_id": record.get(
-                "teacher_id"
-            ),
-
-            "teacher_name": record.get(
-                "teacher_name"
-            ),
-
-            "created_at": (
-                created_at.isoformat()
-                if created_at
-                else None
-            ),
-
-            "updated_at": (
-                updated_at.isoformat()
-                if updated_at
-                else None
-            )
-        })
-
-    return {
-        "permissions": result,
-        "total": len(result)
     }
