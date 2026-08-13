@@ -16,11 +16,14 @@ function StudentDashboard() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const [attendanceHistory, setAttendanceHistory] = useState([]);
-  const [historyLoading, setHistoryLoading] = useState(true);
+  const [attendanceHistory, setAttendanceHistory] =
+    useState([]);
+  const [historyLoading, setHistoryLoading] =
+    useState(true);
 
   const [permissions, setPermissions] = useState([]);
-  const [permissionLoading, setPermissionLoading] = useState(true);
+  const [permissionLoading, setPermissionLoading] =
+    useState(true);
 
   const [permissionForm, setPermissionForm] = useState({
     date: "",
@@ -190,10 +193,8 @@ function StudentDashboard() {
         {
           method: "POST",
           headers: {
-            "Content-Type":
-              "application/json",
-            Authorization:
-              `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(
             permissionForm
@@ -242,11 +243,19 @@ function StudentDashboard() {
     setMessage("");
 
     try {
+      // =========================
+      // CEK HTTPS
+      // =========================
+
       if (!window.isSecureContext) {
         throw new Error(
           "Kamera membutuhkan HTTPS saat dibuka dari HP."
         );
       }
+
+      // =========================
+      // CEK SUPPORT KAMERA
+      // =========================
 
       if (
         !navigator.mediaDevices ||
@@ -257,14 +266,54 @@ function StudentDashboard() {
         );
       }
 
+      // =========================
+      // CEK SCANNER LAMA
+      // =========================
+
+      if (scannerRef.current) {
+        await stopScanner();
+      }
+
+      // =========================
+      // MINTA IZIN KAMERA
+      // =========================
+
+      const permissionStream =
+        await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: {
+              ideal: "environment",
+            },
+          },
+          audio: false,
+        });
+
+      // Tutup stream sementara.
+      // Html5Qrcode akan membuka kamera
+      // kembali ketika scanner dimulai.
+      permissionStream
+        .getTracks()
+        .forEach((track) => {
+          track.stop();
+        });
+
+      // =========================
+      // BUAT SCANNER
+      // =========================
+
       const scanner = new Html5Qrcode(
         "student-qr-reader"
       );
 
       scanner.processingQr = false;
+
       scannerRef.current = scanner;
 
       setScanning(true);
+
+      // =========================
+      // MULAI SCANNER
+      // =========================
 
       await scanner.start(
         {
@@ -291,10 +340,34 @@ function StudentDashboard() {
       scannerRef.current = null;
       setScanning(false);
 
-      setError(
-        err.message ||
-          "Tidak dapat membuka kamera."
-      );
+      let errorMessage =
+        "Tidak dapat membuka kamera.";
+
+      if (
+        err.name === "NotAllowedError"
+      ) {
+        errorMessage =
+          "Izin kamera ditolak. Izinkan kamera untuk situs ini melalui pengaturan browser.";
+      } else if (
+        err.name === "NotFoundError"
+      ) {
+        errorMessage =
+          "Kamera tidak ditemukan di perangkat.";
+      } else if (
+        err.name === "NotReadableError"
+      ) {
+        errorMessage =
+          "Kamera sedang digunakan oleh aplikasi lain.";
+      } else if (
+        err.name === "SecurityError"
+      ) {
+        errorMessage =
+          "Browser memblokir akses kamera.";
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
     }
   };
 
@@ -331,7 +404,9 @@ function StudentDashboard() {
   // =========================
 
   const handleQrResult = async (decodedText) => {
-    if (scannerRef.current?.processingQr) {
+    if (
+      scannerRef.current?.processingQr
+    ) {
       return;
     }
 
@@ -374,15 +449,18 @@ function StudentDashboard() {
       const token =
         localStorage.getItem("token");
 
+      if (!token) {
+        navigate("/");
+        return;
+      }
+
       const response = await fetch(
         `${API_URL}/api/student/attendance/scan`,
         {
           method: "POST",
           headers: {
-            "Content-Type":
-              "application/json",
-            Authorization:
-              `Bearer ${token}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             session_code:
@@ -472,6 +550,10 @@ function StudentDashboard() {
       className: "pending",
     };
   };
+
+  // =========================
+  // RENDER
+  // =========================
 
   if (!user) {
     return null;
@@ -587,11 +669,15 @@ function StudentDashboard() {
           <div className="student-info-grid">
             <div className="info-item">
               <span>Nama</span>
-              <strong>{user.name}</strong>
+
+              <strong>
+                {user.name}
+              </strong>
             </div>
 
             <div className="info-item">
               <span>NIS</span>
+
               <strong>
                 {user.nis || "-"}
               </strong>
@@ -599,6 +685,7 @@ function StudentDashboard() {
 
             <div className="info-item">
               <span>Kelas</span>
+
               <strong>
                 {user.class_name || "-"}
               </strong>
@@ -606,6 +693,7 @@ function StudentDashboard() {
 
             <div className="info-item">
               <span>Status</span>
+
               <strong>
                 {attendanceHistory.some(
                   (item) =>
@@ -650,6 +738,7 @@ function StudentDashboard() {
             <div className="form-row">
               <label>
                 Tanggal
+
                 <input
                   type="date"
                   value={
@@ -667,6 +756,7 @@ function StudentDashboard() {
 
               <label>
                 Alasan
+
                 <select
                   value={
                     permissionForm.reason
@@ -682,15 +772,19 @@ function StudentDashboard() {
                   <option value="">
                     Pilih alasan
                   </option>
+
                   <option value="Sakit">
                     Sakit
                   </option>
+
                   <option value="Izin">
                     Keperluan keluarga
                   </option>
+
                   <option value="Acara">
                     Acara keluarga
                   </option>
+
                   <option value="Lainnya">
                     Lainnya
                   </option>
@@ -700,6 +794,7 @@ function StudentDashboard() {
 
             <label>
               Deskripsi
+
               <textarea
                 rows="4"
                 placeholder="Jelaskan alasan izin kamu..."
