@@ -1,6 +1,9 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Login.css";
+import schoolHero2 from "../assets/school-hero2.png";
+import logoApp from "../assets/logo-app.png";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -33,15 +36,15 @@ function Login() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-  identifier: identifier.trim(),
-  password,
-  role:
-    role === "teacher" &&
-    identifier.trim().toLowerCase() ===
-      "ginzz@absensi.app"
-      ? "admin"
-      : role,
-}),
+            identifier: identifier.trim(),
+            password,
+            role:
+              role === "teacher" &&
+              identifier.trim().toLowerCase() ===
+                "ginzz@absensi.app"
+                ? "admin"
+                : role,
+          }),
         }
       );
 
@@ -88,7 +91,6 @@ function Login() {
           "Role pengguna tidak dikenali"
         );
       }
-
     } catch (error) {
       console.error("Login error:", error);
 
@@ -101,10 +103,10 @@ function Login() {
         );
       } else {
         setError(
-          error.message || "Terjadi kesalahan saat login"
+          error.message ||
+            "Terjadi kesalahan saat login"
         );
       }
-
     } finally {
       setLoading(false);
     }
@@ -119,136 +121,196 @@ function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-container">
+      <div className="login-background-shape shape-one" />
+      <div className="login-background-shape shape-two" />
 
-        <div className="login-header">
+      <div className="login-layout">
+        <div className="login-visual">
+          <div className="visual-overlay" />
 
-          <div className="logo">
-            A
+          <img
+            src={schoolHero2}
+            alt="Lingkungan sekolah"
+            className="login-hero-image"
+          />
+
+          <div className="visual-content">
+            <span className="visual-badge">
+              SISTEM ABSENSI
+            </span>
+
+            <h2>
+              Kelola kehadiran
+              <br />
+              dengan lebih mudah.
+            </h2>
+
+            <p>
+              Platform absensi sekolah untuk
+              siswa, guru, dan pengelola.
+            </p>
+          </div>
+        </div>
+
+        <div className="login-container">
+          <div className="login-header">
+
+  <div className="login-brand">
+    <div className="logo">
+      <img src={logoApp} alt="Logo Absensi Sekolah" />
+    </div>
+
+    <h1>
+      Absensi Sekolah
+    </h1>
+  </div>
+
+  <p>
+    Masuk untuk melanjutkan
+  </p>
+
+</div>
+
+          <div className="role-switcher">
+            <button
+              type="button"
+              className={
+                role === "student"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                changeRole("student")
+              }
+              disabled={loading}
+            >
+              Siswa
+            </button>
+
+            <button
+              type="button"
+              className={
+                role === "teacher"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                changeRole("teacher")
+              }
+              disabled={loading}
+            >
+              Guru
+            </button>
           </div>
 
-          <h1>
-            Absensi Sekolah
-          </h1>
-
-          <p>
-            Masuk untuk melanjutkan
-          </p>
-
-        </div>
-
-        <div className="role-switcher">
-
-          <button
-            type="button"
-            className={
-              role === "student"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              changeRole("student")
-            }
+          <form
+            className="login-form"
+            onSubmit={handleLogin}
           >
-            Siswa
-          </button>
+            <div className="form-field">
+              <label>
+                {role === "student"
+                  ? "Nomor Induk Siswa"
+                  : "Email"}
+              </label>
 
-          <button
-            type="button"
-            className={
-              role === "teacher"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              changeRole("teacher")
-            }
-          >
-            Guru
-          </button>
-
-        </div>
-
-        <form
-          className="login-form"
-          onSubmit={handleLogin}
-        >
-
-          <label>
-            {role === "student"
-              ? "NIS"
-              : "Email"}
-          </label>
-
-          <input
-            type={
-              role === "student"
-                ? "text"
-                : "email"
-            }
-            placeholder={
-              role === "student"
-                ? "Masukkan NIS"
-                : "Masukkan email"
-            }
-            value={identifier}
-            onChange={(event) =>
-              setIdentifier(event.target.value)
-            }
-            autoComplete={
-              role === "student"
-                ? "username"
-                : "email"
-            }
-            disabled={loading}
-            required
-          />
-
-          <label>
-            Password
-          </label>
-
-          <input
-            type="password"
-            placeholder="Masukkan password"
-            value={password}
-            onChange={(event) =>
-              setPassword(event.target.value)
-            }
-            autoComplete="current-password"
-            disabled={loading}
-            required
-          />
-
-          {error && (
-            <div className="login-error">
-              {error}
-            </div>
-          )}
-
-          <button
-            className="login-button"
-            type="submit"
-            disabled={loading}
-          >
-            {loading
-              ? "Memproses..."
-              : `Masuk sebagai ${
+              <input
+                type={
                   role === "student"
+                    ? "text"
+                    : "email"
+                }
+                placeholder={
+                  role === "student"
+                    ? "Masukkan NIS"
+                    : "Masukkan email"
+                }
+                value={identifier}
+                onChange={(event) =>
+                  setIdentifier(
+                    event.target.value
+                  )
+                }
+                autoComplete={
+                  role === "student"
+                    ? "username"
+                    : "email"
+                }
+                disabled={loading}
+                required
+              />
+            </div>
+
+            <div className="form-field">
+              <label>
+                Password
+              </label>
+
+              <input
+                type="password"
+                placeholder="Masukkan password"
+                value={password}
+                onChange={(event) =>
+                  setPassword(
+                    event.target.value
+                  )
+                }
+                autoComplete="current-password"
+                disabled={loading}
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="login-error">
+                <span className="error-icon">
+                  !
+                </span>
+
+                <span>
+                  {error}
+                </span>
+              </div>
+            )}
+
+            <button
+              className="login-button"
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="button-spinner" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  Masuk sebagai{" "}
+                  {role === "student"
                     ? "Siswa"
-                    : "Guru"
-                }`}
-          </button>
+                    : "Guru"}
+                  <span className="button-arrow">
+                    →
+                  </span>
+                </>
+              )}
+            </button>
+          </form>
 
-        </form>
+          <div className="login-footer">
+            <span className="footer-line" />
 
-        <p className="login-footer">
-          Sistem Absensi Sekolah
-        </p>
+            <p>
+              Sistem Absensi Sekolah
+            </p>
 
+            <span className="footer-line" />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 export default Login;
+
