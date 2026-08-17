@@ -61,7 +61,7 @@ function StudentDashboard() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      navigate("/login");
+      navigate("/");
       return;
     }
 
@@ -90,7 +90,7 @@ function StudentDashboard() {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
-      navigate("/login");
+      navigate("/");
     }
   };
 
@@ -362,7 +362,7 @@ function StudentDashboard() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      navigate("/login");
+      navigate("/");
       return;
     }
 
@@ -460,7 +460,7 @@ function StudentDashboard() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    navigate("/login");
+    navigate("/");
   };
 
   // =========================================================
